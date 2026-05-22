@@ -1,9 +1,0 @@
-{
-  "density": 0.002752072488914594,
-  "first_node_fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-  "first_node_hash": "5060803636482931868",
-  "first_node_visits": 62643,
-  "is_directed": true,
-  "total_edges": 571,
-  "total_nodes": 456
-}

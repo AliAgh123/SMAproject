@@ -1,5 +1,9 @@
 # SMA Chess
 
+<p align="center">
+  <img src="img/01%20_%20Wire%20mesh%20(2).png" alt="SMA Chess Logo" width="220"/>
+</p>
+
 Chess opening network analysis built as a reusable Python package.
 
 This project turns chess games into a directed graph of positions and transitions, then analyzes the graph with structural metrics, expected-value scoring, centrality, community detection, path search, benchmarking, and interactive visualizations.
@@ -14,6 +18,10 @@ This project turns chess games into a directed graph of positions and transition
 - Computes summary statistics, expected value, PageRank, in/out degree rankings, communities, and top weighted paths.
 - Generates static charts and interactive PyVis HTML graph views.
 - Benchmarks custom DFS-style path scoring against NetworkX DFS, BFS, Dijkstra, and random walk baselines.
+
+<p align="center">
+  <img src="img/SMA%20Diagram%20(2).png" alt="Project Architecture" width="600"/>
+</p>
 
 ## Project Layout
 
@@ -37,6 +45,15 @@ src/sma_chess/
 
 - Python 3.11+
 - [`uv`](https://docs.astral.sh/uv/)
+- Local Stockfish engine binary for the Stockfish comparison command.
+
+## Platform
+
+The project was developed and tested on **macOS**. It should also work on Windows and Linux:
+
+- On macOS/Linux use `run_chess_defaults.sh` / `run_all.sh`
+- On Windows use `run_chess_defaults.ps1` / `run_all.ps1` (PowerShell equivalents are included)
+- The Python package itself (`uv run sma-chess ...`) is fully cross-platform
 
 Install/sync dependencies:
 
@@ -44,69 +61,144 @@ Install/sync dependencies:
 uv sync
 ```
 
+## Dataset
+
+The project uses rated standard chess games from the [Lichess open database](https://database.lichess.org/).
+Lichess publishes a free, complete monthly dump of all rated games in compressed PGN format (`.pgn.zst`).
+
+The default run uses the **May 2015** dump:
+
+```
+https://database.lichess.org/standard/lichess_db_standard_rated_2015-05.pgn.zst
+```
+
+Any other monthly dump from the same database works as a drop-in replacement — just point
+`RAW_PGN` at the downloaded file. Larger or more recent dumps will produce bigger graphs and
+may take longer to parse.
+
+```bash
+# Example: use the January 2017 dump instead
+MODE=raw \
+RAW_PGN=data/raw/lichess_db_standard_rated_2017-01.pgn.zst \
+CHECKPOINT=data/interim/chess_2017_01_pass1.pkl \
+GRAPH=data/processed/chess_graph_2017_01.json \
+./run_chess_defaults.sh
+```
+
 ## Quick Start
 
-From the project root:
+### Step 1 — Install dependencies
 
 ```bash
 cd /path/to/SMAproject
-./run_all.sh
+uv sync
 ```
+
+### Step 2 — Install Stockfish
+
+The project requires a local [Stockfish](https://stockfishchess.org/download/) engine binary.
+The runner auto-detects it at the common install locations (`/opt/homebrew/bin/stockfish`,
+`/usr/local/bin/stockfish`, `/usr/games/stockfish`).
+
+| Platform         | Command                                                                                        |
+| ---------------- | ---------------------------------------------------------------------------------------------- |
+| macOS (Homebrew) | `brew install stockfish`                                                                       |
+| Ubuntu / Debian  | `sudo apt install stockfish`                                                                   |
+| Windows          | Download from [stockfish.org](https://stockfishchess.org/download/) and set `STOCKFISH_ENGINE` |
+
+### Step 3 - Ensure needed LiChess Database is downloaded
+
+You need to verify that you have a LiChess DB installed from [Lichess open database](https://database.lichess.org/)
+
+### Step 4 — Run the full pipeline
+
+This is the **recommended first run**. It parses the raw chess data, builds the graph, and runs
+all analyses and visualizations using the same parameters as `notebooks/chess.ipynb`:
+
+```bash
+MODE=raw \
+RAW_PGN=data/raw/lichess_db_standard_rated_2015-05.pgn.zst \
+CHECKPOINT=data/interim/chess_2015_05_pass1.pkl \
+./run_chess_defaults.sh
+```
+
+> **Note:** Parsing the raw `.pgn.zst` file takes several minutes.
+> Subsequent runs can skip it using `MODE=checkpoint` (see below).
 
 On Windows PowerShell:
 
 ```powershell
-cd path\to\SMAproject
-.\run_all.ps1
+$env:STOCKFISH_ENGINE = "C:\path\to\stockfish.exe"
+.\run_all.ps1 -Mode raw -RawPgn data\raw\lichess_db_standard_rated_2015-05.pgn.zst -Checkpoint data\interim\chess_2015_05_pass1.pkl
 ```
 
-The runner creates:
+The runner produces:
 
 ```text
+data/processed/chess_graph_2015_05_6k.json   ← built graph
+data/processed/benchmark.csv
 reports/summary.json
 reports/analysis.json
+reports/regression_metrics.json
+reports/stockfish_metrics.json
 reports/figures/graph_overview.png
+reports/figures/chess_superstructure.png
+reports/figures/expected_value_heatmap.png
+reports/figures/centrality_overlap.png
+reports/figures/macro_structure_top_paths.png
 reports/figures/interactive_graph.html
 reports/figures/interactive_path.html
-data/processed/benchmark.csv
 reports/figures/benchmark.png
+reports/figures/ablation_depth_comparison.png
+reports/figures/regression_performance.png
+reports/figures/stockfish_comparison.png
+```
+
+### Subsequent Runs (skip PGN parsing)
+
+Once the checkpoint exists, use `MODE=checkpoint` to rebuild the graph without re-parsing:
+
+```bash
+MODE=checkpoint \
+CHECKPOINT=data/interim/chess_2015_05_pass1.pkl \
+./run_chess_defaults.sh
+```
+
+Or skip graph building entirely if the graph JSON already exists:
+
+```bash
+./run_chess_defaults.sh
 ```
 
 ## Run Modes
 
-Use the existing processed graph JSON:
+| `MODE`               | What it does                                                                 |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `existing` (default) | Expects the graph JSON to already exist, jumps straight to analysis          |
+| `checkpoint`         | Rebuilds the graph JSON from a saved `.pkl` checkpoint, then runs analysis   |
+| `raw`                | Full pipeline: parse PGN → save checkpoint → build graph JSON → run analysis |
+
+## Custom Runs
+
+For targeted analysis or to explore individual commands, use the CLI directly.
+Every command supports `--help`:
 
 ```bash
-./run_all.sh
+uv run sma-chess --help
+uv run sma-chess analyze --help
+uv run sma-chess visualize --help
+uv run sma-chess benchmark --help
+uv run sma-chess stockfish --help
 ```
 
-Build graph JSON from an existing checkpoint first:
+Example: run only the analysis step on an existing graph:
 
 ```bash
-MODE=checkpoint \
-CHECKPOINT=data/interim/test_2013_02_pass1.pkl \
-GRAPH=data/processed/rebuilt_graph.json \
-./run_all.sh
-```
-
-Parse raw PGN, build graph JSON, then run all analysis:
-
-```bash
-MODE=raw \
-RAW_PGN=data/raw/lichess_db_standard_rated_2013-02.pgn.zst \
-CHECKPOINT=data/interim/pass1.pkl \
-GRAPH=data/processed/chess_graph_from_raw.json \
-./run_all.sh
-```
-
-PowerShell equivalents:
-
-```powershell
-.\run_all.ps1 -Mode checkpoint -Checkpoint data/interim/test_2013_02_pass1.pkl -Graph data/processed/rebuilt_graph.json
-```
-
-```powershell
-.\run_all.ps1 -Mode raw -RawPgn data/raw/lichess_db_standard_rated_2013-02.pgn.zst -Checkpoint data/interim/pass1.pkl -Graph data/processed/chess_graph_from_raw.json
+uv run sma-chess analyze \
+  --graph data/processed/chess_graph_2015_05_6k.json \
+  --top-k 5 \
+  --paths \
+  --communities
 ```
 
 ## CLI Usage
@@ -141,6 +233,7 @@ uv run sma-chess visualize \
   --graph data/processed/chess_graph_2015_05_6k.json \
   --output-dir reports/figures \
   --interactive \
+  --notebook-static \
   --max-nodes 500 \
   --color-by ev \
   --path-view
@@ -153,7 +246,17 @@ uv run sma-chess benchmark \
   --graph data/processed/chess_graph_2015_05_6k.json \
   --node-sizes 100 300 500 1000 \
   --output data/processed/benchmark.csv \
-  --figure reports/figures/benchmark.png
+  --figure reports/figures/benchmark.png \
+  --ablation-figure reports/figures/ablation_depth_comparison.png
+```
+
+Run regression:
+
+```bash
+uv run sma-chess regression \
+  --graph data/processed/chess_graph_2015_05_6k.json \
+  --output reports/regression_metrics.json \
+  --figure reports/figures/regression_performance.png
 ```
 
 Parse PGN into a checkpoint:
@@ -207,35 +310,28 @@ Large graphs can be heavy in the browser, so interactive output samples the high
 
 ## Stockfish Comparison
 
-Stockfish comparison is optional and requires a local Stockfish engine binary:
+Stockfish comparison is a required part of the project and requires a local Stockfish engine binary:
 
 ```bash
 uv run sma-chess stockfish \
   --graph data/processed/chess_graph_2015_05_6k.json \
   --engine /path/to/stockfish \
-  --figure reports/figures/stockfish_comparison.png
+  --figure reports/figures/stockfish_comparison.png \
+  --output reports/stockfish_metrics.json
 ```
 
 ## Development Checks
 
-Run lint checks for the currently refactored package code:
+Run lint checks for the project package code:
 
 ```bash
-uv run ruff check src/sma_chess/cli.py src/sma_chess/visualization
+uv run ruff check src/sma_chess
 ```
-
-Run tests:
-
-```bash
-uv run pytest
-```
-
-At the moment, the project still needs a proper test suite. `pytest` may report that no tests were collected until tests are added under `tests/`.
 
 ## Notes
 
 - The canonical project is the chess network analytics package.
-- Older notebooks are retained as reference/report artifacts.
 - The package source of truth is under `src/sma_chess/`.
 - `run_all.sh` is for macOS/Linux/Git Bash/WSL.
 - `run_all.ps1` is for native Windows PowerShell.
+- The original analysis was conducted in the chess.ipynb (in the notebooks folder)

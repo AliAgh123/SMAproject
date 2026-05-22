@@ -9,10 +9,16 @@ from tqdm import tqdm
 from sma_chess.analytics.path_scoring import get_top_weighted_paths
 
 
-NODE_SIZES = [100, 300, 500, 1000,1500,3000, 5000,6000]
+NODE_SIZES = [100, 300, 500, 1000, 1500, 3000, 5000, 6000]
 
 
-def run_benchmark(G, node_sizes=None):
+def run_benchmark(
+    G,
+    node_sizes=None,
+    depth_limit=4,
+    beam_width=2,
+    perspective="optimal",
+):
     print("Benchmarking")
 
     if node_sizes is None:
@@ -39,25 +45,43 @@ def run_benchmark(G, node_sizes=None):
         # 1. Custom DFS (Ours)
         start_time = time.perf_counter()
         # (Assuming your get_top_weighted_paths function is loaded in the script)
-        custom_paths = get_top_weighted_paths(subG, start_node, depth_limit=4, top_k=1)
+        effective_depth = depth_limit if depth_limit is not None else len(subG)
+
+        custom_paths = get_top_weighted_paths(
+            subG,
+            start_node,
+            depth_limit=effective_depth,
+            top_k=1,
+            beam_width=beam_width,
+            perspective=perspective,
+        )
         time_custom = time.perf_counter() - start_time
         score_custom = custom_paths[0][1] if custom_paths else 0
 
         # 2. NetworkX DFS (Blind Traversal)
         start_time = time.perf_counter()
-        list(nx.dfs_edges(subG, source=start_node, depth_limit=4))
+        if depth_limit is None:
+            list(nx.dfs_edges(subG, source=start_node))
+        else:
+            list(nx.dfs_edges(subG, source=start_node, depth_limit=depth_limit))
         time_nx_dfs = time.perf_counter() - start_time
 
         # 3. NetworkX BFS (Blind Traversal)
         start_time = time.perf_counter()
-        list(nx.bfs_edges(subG, source=start_node, depth_limit=4))
+        if depth_limit is None:
+            list(nx.bfs_edges(subG, source=start_node))
+        else:
+            list(nx.bfs_edges(subG, source=start_node, depth_limit=depth_limit))
         time_nx_bfs = time.perf_counter() - start_time
 
         # 4. Dijkstra's Algorithm (Optimal Score)
         start_time = time.perf_counter()
         try:
-            #find all nodes that are exactly 'depth_limit' away (e.g., 4 moves)
-            depth_map = nx.single_source_shortest_path_length(subG, start_node, cutoff=4)
+            # Find all nodes that are exactly depth_limit away.
+            if depth_limit is None:
+                depth_map = nx.single_source_shortest_path_length(subG, start_node)
+            else:
+                depth_map = nx.single_source_shortest_path_length(subG, start_node, cutoff=depth_limit)
             max_depth = max(depth_map.values()) if depth_map else 0
             target_nodes = [n for n, depth in depth_map.items() if depth == max_depth and n != start_node]
 
@@ -96,9 +120,10 @@ def run_benchmark(G, node_sizes=None):
         # 5. Random Walk to compare for random path selections
         score_random = 0
         curr = start_node
-        for _ in range(4):
+        for _ in range(effective_depth):
             successors = list(subG.successors(curr))
-            if not successors: break
+            if not successors:
+                break
             nxt = random.choice(successors)
             score_random += subG[curr][nxt].get('weight', 0.0) * subG.nodes[nxt].get('expected_value', 0.0)
             curr = nxt
@@ -118,7 +143,7 @@ def run_benchmark(G, node_sizes=None):
     return pd.DataFrame(results)
 
 
-def plot_benchmark_results(df_bench):
+def plot_benchmark_results(df_bench, show=True):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
 
     # Plot 1: Execution Time (Log Scale)
@@ -151,7 +176,8 @@ def plot_benchmark_results(df_bench):
     ax2.legend(loc='upper right', fontsize=10)
 
     plt.tight_layout()
-    plt.show()
+    if show:
+        plt.show()
     plt.style.use('default')
 
     return fig

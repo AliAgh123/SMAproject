@@ -14,7 +14,6 @@ dependencies = [
     "pandas>=3.0.3",
     "pyvis>=0.3.2",
     "python-chess>=1.999",
-    "pyvis>=0.3.2",
     "scikit-learn>=1.8.0",
     "scipy>=1.17.1",
     "seaborn>=0.13.2",
@@ -34,6 +33,5 @@ build-backend = "uv_build"
 dev = [
     "ipykernel>=7.2.0",
     "jupyter>=1.1.1",
-    "pytest>=9.0.3",
     "ruff>=0.15.14",
 ]

@@ -29,7 +29,7 @@ def get_node_fen(G, h):
 def get_node_outcomes(G, h):
     o = G.nodes[str(h)].get("outcomes", {})
     if isinstance(o, dict):
-        return [o.get("W", 0), o.get("D", 0), o.get("L", 0)]
+        return [o.get("W", 0), o.get("L", 0), o.get("D", 0)]
     return o
 
 

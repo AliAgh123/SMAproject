@@ -42,6 +42,7 @@ data/interim/
 *.zst
 
 # Generated reports and figures
+reports/
 
 *.aux
 *.bbl

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from html import escape
 from pathlib import Path
 from typing import Literal
 
+import chess
+import chess.svg
 import networkx as nx
 from pyvis.network import Network
 
@@ -81,13 +84,29 @@ def _blue_scale(value: float, low: float, high: float) -> str:
     return f"rgb(37, 99, {intensity})"
 
 
-def _node_title(node: str, data: dict) -> str:
+def _board_svg(fen: str | None) -> str:
+    if not fen:
+        return ""
+
+    try:
+        board = chess.Board(fen)
+    except ValueError:
+        return ""
+
+    svg = chess.svg.board(board, size=220)
+    return f'<div style="margin: 0 0 8px 0;">{svg}</div>'
+
+
+def _node_title(node: str, data: dict, *, show_board: bool = True) -> str:
     outcomes = data.get("outcomes") or [0, 0, 0]
     wins, losses, draws = outcomes
     ev = data.get("expected_value", 0.0) or 0.0
+    fen = data.get("fen", "N/A")
+    board = _board_svg(fen) if show_board else ""
     return (
-        f"<b>{node}</b><br>"
-        f"FEN: {data.get('fen', 'N/A')}<br>"
+        f"{board}"
+        f"<b>{escape(str(node))}</b><br>"
+        f"FEN: {escape(str(fen))}<br>"
         f"Visits: {data.get('visits', 0):,}<br>"
         f"Outcomes: W {wins:,} / L {losses:,} / D {draws:,}<br>"
         f"Expected value: {ev:+.4f}"
@@ -117,6 +136,7 @@ def create_interactive_graph(
     max_nodes: int = 500,
     color_by: ColorMode = "ev",
     min_edge_prob: float = 0.0,
+    show_boards: bool = True,
     height: str = "850px",
     width: str = "100%",
 ) -> Path:
@@ -190,7 +210,7 @@ def create_interactive_graph(
         network.add_node(
             node,
             label="",
-            title=_node_title(node, data),
+            title=_node_title(node, data, show_board=show_boards),
             color=_node_color(node, data, color_by, pagerank, communities),
             size=size,
             value=visits_count,
@@ -218,6 +238,7 @@ def create_interactive_path_graph(
     output_path: str | Path,
     *,
     neighborhood_hops: int = 1,
+    show_boards: bool = True,
     height: str = "760px",
     width: str = "100%",
 ) -> Path:
@@ -242,7 +263,7 @@ def create_interactive_path_graph(
         network.add_node(
             node,
             label=str(path.index(node) + 1) if on_path else "",
-            title=_node_title(node, data),
+            title=_node_title(node, data, show_board=show_boards),
             color="#f59e0b" if on_path else "#64748b",
             size=26 if on_path else 10,
         )

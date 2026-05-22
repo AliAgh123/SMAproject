@@ -17,11 +17,15 @@ def _strip_comments_and_variations(text: str) -> str:
     brace = 0
     paren = 0
     for ch in text:
-        if   ch == '{': brace += 1
-        elif ch == '}': brace = max(brace - 1, 0)
+        if   ch == '{':
+            brace += 1
+        elif ch == '}':
+            brace = max(brace - 1, 0)
         elif brace == 0:
-            if   ch == '(': paren += 1
-            elif ch == ')': paren = max(paren - 1, 0)
+            if   ch == '(':
+                paren += 1
+            elif ch == ')':
+                paren = max(paren - 1, 0)
             elif paren == 0:
                 out.append(ch)
     return ''.join(out)
@@ -65,9 +69,12 @@ def _fmt_duration(seconds: float) -> str:
     h = int(seconds // 3600)
     m = int((seconds % 3600) // 60)
     s = seconds % 60
-    if h > 0:   return f"{h}h {m}m {s:.1f}s"
-    elif m > 0: return f"{m}m {s:.1f}s"
-    else:       return f"{s:.2f}s"
+    if h > 0:
+        return f"{h}h {m}m {s:.1f}s"
+    elif m > 0:
+        return f"{m}m {s:.1f}s"
+    else:
+        return f"{s:.2f}s"
 
 
 

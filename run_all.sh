@@ -8,6 +8,11 @@ CHECKPOINT="${CHECKPOINT:-data/interim/pass1.pkl}"
 REPORT_DIR="${REPORT_DIR:-reports}"
 FIGURE_DIR="${FIGURE_DIR:-reports/figures}"
 BENCHMARK_NODES="${BENCHMARK_NODES:-100 300 500 1000}"
+NOTEBOOK_STATIC_MAX_NODES="${NOTEBOOK_STATIC_MAX_NODES:-500}"
+STOCKFISH_ENGINE="${STOCKFISH_ENGINE:-/usr/games/stockfish}"
+STOCKFISH_DEPTH="${STOCKFISH_DEPTH:-15}"
+STOCKFISH_PATH_DEPTH="${STOCKFISH_PATH_DEPTH:-6}"
+STOCKFISH_TOP_K="${STOCKFISH_TOP_K:-20}"
 MAX_DEPTH="${MAX_DEPTH:-20}"
 MIN_ELO="${MIN_ELO:-1000}"
 MIN_MAIN_TIME="${MIN_MAIN_TIME:-300}"
@@ -78,6 +83,8 @@ uv run sma-chess visualize \
   --graph "$GRAPH" \
   --output-dir "$FIGURE_DIR" \
   --interactive \
+  --notebook-static \
+  --notebook-static-max-nodes "$NOTEBOOK_STATIC_MAX_NODES" \
   --max-nodes 500 \
   --color-by ev \
   --path-view \
@@ -91,7 +98,29 @@ uv run sma-chess benchmark \
   --graph "$GRAPH" \
   --node-sizes $BENCHMARK_NODES \
   --output data/processed/benchmark.csv \
-  --figure "$FIGURE_DIR/benchmark.png"
+  --figure "$FIGURE_DIR/benchmark.png" \
+  --ablation-figure "$FIGURE_DIR/ablation_depth_comparison.png"
+
+echo "==> Running regression analysis"
+uv run sma-chess regression \
+  --graph "$GRAPH" \
+  --output "$REPORT_DIR/regression_metrics.json" \
+  --figure "$FIGURE_DIR/regression_performance.png"
+
+echo "==> Running Stockfish comparison"
+if [[ ! -x "$STOCKFISH_ENGINE" ]]; then
+  echo "Stockfish engine not found or not executable: $STOCKFISH_ENGINE" >&2
+  echo "Set STOCKFISH_ENGINE=/path/to/stockfish and rerun." >&2
+  exit 2
+fi
+uv run sma-chess stockfish \
+  --graph "$GRAPH" \
+  --engine "$STOCKFISH_ENGINE" \
+  --stockfish-depth "$STOCKFISH_DEPTH" \
+  --depth "$STOCKFISH_PATH_DEPTH" \
+  --top-k "$STOCKFISH_TOP_K" \
+  --figure "$FIGURE_DIR/stockfish_comparison.png" \
+  --output "$REPORT_DIR/stockfish_metrics.json"
 
 echo
 echo "Done."
@@ -102,3 +131,8 @@ echo "Interactive graph:    $FIGURE_DIR/interactive_graph.html"
 echo "Interactive path:     $FIGURE_DIR/interactive_path.html"
 echo "Benchmark CSV:        data/processed/benchmark.csv"
 echo "Benchmark figure:     $FIGURE_DIR/benchmark.png"
+echo "Ablation figure:      $FIGURE_DIR/ablation_depth_comparison.png"
+echo "Regression metrics:   $REPORT_DIR/regression_metrics.json"
+echo "Regression figure:    $FIGURE_DIR/regression_performance.png"
+echo "Stockfish metrics:    $REPORT_DIR/stockfish_metrics.json"
+echo "Stockfish figure:     $FIGURE_DIR/stockfish_comparison.png"
