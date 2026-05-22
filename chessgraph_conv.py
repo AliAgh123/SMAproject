@@ -1,7 +1,6 @@
 
 import networkx as nx
 import json
-import chess
 
 file_path = 'chess_graph_small.json'
 

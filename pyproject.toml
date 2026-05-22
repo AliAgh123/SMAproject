@@ -1,0 +1,39 @@
+[project]
+name = "sma-chess"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { email = "aliabdelgh@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "matplotlib>=3.10.9",
+    "networkx>=3.6.1",
+    "numpy>=2.4.6",
+    "pandas>=3.0.3",
+    "pyvis>=0.3.2",
+    "python-chess>=1.999",
+    "pyvis>=0.3.2",
+    "scikit-learn>=1.8.0",
+    "scipy>=1.17.1",
+    "seaborn>=0.13.2",
+    "stockfish>=5.2.0",
+    "tqdm>=4.67.3",
+    "zstandard>=0.25.0",
+]
+
+[project.scripts]
+sma-chess = "sma_chess.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.15,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+    "jupyter>=1.1.1",
+    "pytest>=9.0.3",
+    "ruff>=0.15.14",
+]
