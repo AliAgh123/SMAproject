@@ -154,6 +154,12 @@ reports/figures/regression_performance.png
 reports/figures/stockfish_comparison.png
 ```
 
+---
+
+> **Note:** Everything below this line is supplementary. If you have already completed Step 3 above, there is nothing else you need to run — all outputs have been generated.
+
+---
+
 ### Subsequent Runs (skip PGN parsing)
 
 Once the checkpoint exists, use `MODE=checkpoint` to rebuild the graph without re-parsing:
