@@ -134,7 +134,7 @@ def create_interactive_graph(
     output_path: str | Path,
     *,
     max_nodes: int = 500,
-    color_by: ColorMode = "ev",
+    color_by: ColorMode = "community",
     min_edge_prob: float = 0.0,
     show_boards: bool = True,
     height: str = "850px",

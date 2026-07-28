@@ -21,7 +21,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-New-Item -ItemType Directory -Force -Path $ReportDir, $FigureDir, "data/interim", "data/processed" | Out-Null
+New-Item -ItemType Directory -Force -Path $ReportDir, $FigureDir, "data/raw", "data/interim", "data/processed" | Out-Null
 
 Write-Host "==> Syncing dependencies"
 uv sync

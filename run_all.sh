@@ -20,7 +20,7 @@ MAX_NODES="${MAX_NODES:-10000}"
 MIN_PROB="${MIN_PROB:-0.02}"
 MIN_COUNT="${MIN_COUNT:-100}"
 
-mkdir -p "$REPORT_DIR" "$FIGURE_DIR" data/interim data/processed
+mkdir -p "$REPORT_DIR" "$FIGURE_DIR" data/raw data/interim data/processed
 
 echo "==> Syncing dependencies"
 uv sync
